@@ -250,6 +250,9 @@ pub mod kya;
 #[cfg(feature = "database")]
 pub mod dispute;
 
+// AML/KYC Compliance Effectiveness Reporting System
+pub mod compliance_effectiveness;
+
 // Contract error enum for Soroban (only when not using database feature)
 #[cfg(not(feature = "database"))]
 #[contracterror]

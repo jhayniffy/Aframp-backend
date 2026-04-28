@@ -57,6 +57,9 @@ mod dispute;
 
 // DeFi Integration Architecture & Protocol Selection (Issue #370)
 mod defi;
+
+// AML/KYC Compliance Effectiveness Reporting System
+mod compliance_effectiveness;
 use std::sync::Arc;
 use crate::config::AppConfig;
 use crate::health::{HealthChecker, HealthStatus};
@@ -1845,6 +1848,27 @@ async fn main() -> anyhow::Result<()> {
         info!("⏭️  Skipping auditor portal routes (no database)");
         Router::new()
     };
+
+    // ── Compliance Effectiveness Reporting (AML/KYC KPI Reports) ─────────────
+    let compliance_effectiveness_routes = if let Some(ref pool) = db_pool {
+        let ce_repo = std::sync::Arc::new(
+            compliance_effectiveness::ComplianceEffectivenessRepository::new(pool.clone())
+        );
+        let ce_service = std::sync::Arc::new(
+            compliance_effectiveness::ReportGenerationService::new(ce_repo.clone())
+        );
+        // Start scheduled reporting worker
+        compliance_effectiveness::ComplianceReportWorker::new(ce_service.clone(), ce_repo.clone()).start();
+        let ce_state = std::sync::Arc::new(compliance_effectiveness::ComplianceEffectivenessState {
+            service: ce_service,
+            repo: ce_repo,
+        });
+        info!("✅ Compliance effectiveness reporting routes enabled");
+        compliance_effectiveness::compliance_effectiveness_routes(ce_state)
+    } else {
+        info!("⏭️  Skipping compliance effectiveness routes (no database)");
+        Router::new()
+    };
     let (ddos_state, ddos_admin_routes) = if let Some(ref cache) = redis_cache {
         let ddos_config = ddos::config::DdosConfig::from_env();
         let state = std::sync::Arc::new(ddos::state::DdosState::new(ddos_config, cache.clone()));
@@ -2343,6 +2367,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(adaptive_rl_admin_routes)
         .merge(audit_routes)
         .merge(auditor_portal_routes)
+        .merge(compliance_effectiveness_routes)
         .merge(key_rotation_routes)
         .merge(analytics_routes)
         .merge(openapi_routes)

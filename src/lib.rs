@@ -262,6 +262,10 @@ pub mod banking;
 #[cfg(feature = "database")]
 pub mod collateral_lending;
 
+// DeFi Integration Architecture & Analytics Dashboard (Issues #370, #348)
+#[cfg(feature = "database")]
+pub mod defi;
+
 // Issue #399 — Event-Driven Architecture (async event bus, DLQ, idempotent consumers)
 #[cfg(feature = "database")]
 pub mod event_bus;

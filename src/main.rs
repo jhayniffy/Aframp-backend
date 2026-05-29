@@ -2539,6 +2539,28 @@ async fn main() -> anyhow::Result<()> {
         Router::new()
     };
 
+    // DeFi Analytics & Yield Performance Dashboard — Issue #348
+    let defi_analytics_routes = if let Some(pool) = db_pool.clone() {
+        let repo = std::sync::Arc::new(
+            defi::analytics::DefiAnalyticsRepository::new(std::sync::Arc::new(pool.clone()))
+        );
+        let svc = std::sync::Arc::new(defi::analytics::DefiAnalyticsService::new(repo));
+
+        // Spawn background snapshot worker
+        let worker_svc = svc.clone();
+        let worker_config = defi::analytics::worker::DefiAnalyticsWorkerConfig::default();
+        tokio::spawn(
+            defi::analytics::worker::DefiAnalyticsWorker::new(worker_svc, worker_config)
+                .run(worker_shutdown_rx.clone())
+        );
+        info!("✅ DeFi analytics snapshot worker started");
+
+        defi::analytics::defi_analytics_routes(svc)
+    } else {
+        info!("⏭️  Skipping DeFi analytics routes (no database)");
+        Router::new()
+    };
+
     let app = Router::new()
         .route("/", get(root))
         .route("/health", get(health))
@@ -2628,6 +2650,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(banking_webhook_routes)
         .merge(sla_routes)
         .merge(pep_routes)
+        .merge(defi_analytics_routes)
         .with_state(AppState {
             db_pool,
             redis_cache,

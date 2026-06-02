@@ -270,6 +270,18 @@ pub mod event_bus;
 #[cfg(feature = "database")]
 pub mod travel_rule;
 
+// Issue #523 — Automated Regulatory Report Generation & Compliance Filings Pipeline
+#[cfg(feature = "database")]
+pub mod regulatory_filing;
+
+// Issue #524 — Programmable Sovereign Debt Settlement & Tokenized Treasury Bond Rails
+#[cfg(feature = "database")]
+pub mod treasury_bonds;
+
+// Issue #525 — Automated Central Bank Clearing & Interbank Settlement Rail (RTGS Bridge)
+#[cfg(feature = "database")]
+pub mod rtgs;
+
 // Contract error enum for Soroban (only when not using database feature)
 #[cfg(not(feature = "database"))]
 #[contracterror]

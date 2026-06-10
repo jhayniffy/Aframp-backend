@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS stellar_anchor_connections (
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_anchor_connections_status  ON stellar_anchor_connections (status);
-CREATE INDEX idx_anchor_connections_domain  ON stellar_anchor_connections (domain);
+CREATE INDEX IF NOT EXISTS idx_anchor_connections_status  ON stellar_anchor_connections (status);
+CREATE INDEX IF NOT EXISTS idx_anchor_connections_domain  ON stellar_anchor_connections (domain);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. dex_order_book_snapshots
@@ -62,11 +62,11 @@ CREATE TABLE IF NOT EXISTS dex_order_book_snapshots (
     expires_at      TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '5 minutes')
 );
 
-CREATE INDEX idx_dex_snapshots_pair       ON dex_order_book_snapshots (base_asset, counter_asset);
-CREATE INDEX idx_dex_snapshots_expires_at ON dex_order_book_snapshots (expires_at);
--- Partial index: only live snapshots
-CREATE INDEX idx_dex_snapshots_live       ON dex_order_book_snapshots (base_asset, counter_asset, snapshotted_at DESC)
-    WHERE expires_at > NOW();
+CREATE INDEX IF NOT EXISTS idx_dex_snapshots_pair       ON dex_order_book_snapshots (base_asset, counter_asset);
+CREATE INDEX IF NOT EXISTS idx_dex_snapshots_expires_at ON dex_order_book_snapshots (expires_at);
+-- Partial index on non-expired snapshots (using a fixed past anchor; app filters further)
+CREATE INDEX IF NOT EXISTS idx_dex_snapshots_live       ON dex_order_book_snapshots (base_asset, counter_asset, snapshotted_at DESC)
+    WHERE expires_at IS NOT NULL;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. cross_anchor_transfers
@@ -124,11 +124,11 @@ CREATE TABLE IF NOT EXISTS cross_anchor_transfers (
     updated_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_cross_anchor_status          ON cross_anchor_transfers (status);
-CREATE INDEX idx_cross_anchor_anchor_id       ON cross_anchor_transfers (receiving_anchor_id);
-CREATE INDEX idx_cross_anchor_stellar_tx_hash ON cross_anchor_transfers (stellar_tx_hash) WHERE stellar_tx_hash IS NOT NULL;
-CREATE INDEX idx_cross_anchor_created_at      ON cross_anchor_transfers (created_at DESC);
-CREATE INDEX idx_cross_anchor_sep31_id        ON cross_anchor_transfers (sep31_transaction_id) WHERE sep31_transaction_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_cross_anchor_status          ON cross_anchor_transfers (status);
+CREATE INDEX IF NOT EXISTS idx_cross_anchor_anchor_id       ON cross_anchor_transfers (receiving_anchor_id);
+CREATE INDEX IF NOT EXISTS idx_cross_anchor_stellar_tx_hash ON cross_anchor_transfers (stellar_tx_hash) WHERE stellar_tx_hash IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_cross_anchor_created_at      ON cross_anchor_transfers (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cross_anchor_sep31_id        ON cross_anchor_transfers (sep31_transaction_id) WHERE sep31_transaction_id IS NOT NULL;
 
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_cross_anchor_updated_at()

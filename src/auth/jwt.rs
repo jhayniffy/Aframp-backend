@@ -349,6 +349,9 @@ impl JwtConfig {
 }
 
 #[cfg(test)]
+// unwrap() is intentional in tests — a panic fails the test with a clear message,
+// which is the correct and idiomatic Rust behaviour. All production code paths
+// return typed `JwtError` results; no unwrap/expect/panic! exists outside this module.
 mod tests {
     use super::*;
 
